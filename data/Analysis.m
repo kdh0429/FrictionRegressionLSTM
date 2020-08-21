@@ -36,7 +36,8 @@ cd ..
 cd result
 FrictionModelLSTM = load('testing_result.csv');
 
-%% Plot
+%% Plot Trajectory
+f1 = figure;
 for j=1:6
     subplot(2,3,j)
     plot(Motor_Torque(:,j) - JTS(:,j))
@@ -45,4 +46,21 @@ for j=1:6
     plot(FrictionModelPoly(:,j))
     plot(FrictionModelLSTM(:,j))
     legend('GT','MOB','Poly','LSTM')
+end
+
+%% Plot qdot
+f2 = figure;
+qdot = [0:0.001:2.1]';
+
+for i=1:6
+fm(:,i) = polyval(p(:,i),qdot);
+end
+
+for j= 1:6
+    subplot(2,3,j)
+    plot(abs(VelMFree(1:size(FrictionModelLSTM,1),j)), abs(ResidualEstimate(1:size(FrictionModelLSTM,1),j)))
+    hold on
+    plot(abs(VelMFree(1:size(FrictionModelLSTM,1),j)), abs(FrictionModelLSTM(:,j)))
+    plot(qdot,fm(:,j))
+    legend('MOB','LSTM','Poly')
 end
