@@ -1,0 +1,18 @@
+.vscode/
+
+# Data
+data/robot1*
+data/TestingDataFriction.csv
+data/TestingDataRaw.csv
+data/TrainingDataFriction.csv
+data/TrainingDataRaw.csv
+data/ValidationDataFriction.csv
+
+# Model
+checkpoints/
+
+# Results
+result/testing_result.csv
+
+# Wandb
+wandb/
