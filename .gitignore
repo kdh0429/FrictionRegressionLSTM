@@ -7,12 +7,16 @@ data/TestingDataRaw.csv
 data/TrainingDataFriction.csv
 data/TrainingDataRaw.csv
 data/ValidationDataFriction.csv
+data/OfflineTestingCollisionDataFriction.csv
+data/OfflineTestingFreeDataFriction.csv
 
 # Model
 checkpoints/
 
 # Results
 result/testing_result.csv
+result/offline_testing_result_collision.csv
+result/offline_testing_result_free.csv
 
 # Wandb
 wandb/
