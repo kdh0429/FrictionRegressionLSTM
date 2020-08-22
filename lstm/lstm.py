@@ -100,7 +100,7 @@ class FrictionLSTM(nn.Module):
                 wandb_dict['Validation Loss'] = validation_loss
                 wandb.log(wandb_dict)
 
-    def test(self, testloader):
+    def test(self, testloader,offline_test_free_loader=None,offline_test_collision_loader=None):
         print("--------------------------- TEST ---------------------------")
         self.eval()
 
@@ -117,6 +117,35 @@ class FrictionLSTM(nn.Module):
 
         print("Test Loss: ", np.mean(test_losses))
         np.savetxt("./result/testing_result.csv", predictions, delimiter=",")
+        
+        if offline_test_free_loader is not None:
+            predictions = []
+            test_losses = []
+
+            for inputs, outputs in offline_test_free_loader:
+                inputs = inputs.to(self._device)
+                outputs = outputs.to(self._device)
+                preds = self.forward(inputs)
+                test_loss = nn.L1Loss(reduction='sum')(preds, outputs) / inputs.shape[0]
+                predictions.extend(self._to_numpy(preds))
+                test_losses.append(self._to_numpy(test_loss))
+
+            np.savetxt("./result/offline_testing_result_free.csv", predictions, delimiter=",")
+
+        if offline_test_collision_loader is not None:
+            predictions = []
+            test_losses = []
+
+            for inputs, outputs in offline_test_collision_loader:
+                inputs = inputs.to(self._device)
+                outputs = outputs.to(self._device)
+                preds = self.forward(inputs)
+                test_loss = nn.L1Loss(reduction='sum')(preds, outputs) / inputs.shape[0]
+                predictions.extend(self._to_numpy(preds))
+                test_losses.append(self._to_numpy(test_loss))
+
+            np.savetxt("./result/offline_testing_result_collision.csv", predictions, delimiter=",")
+
 
     def evaluate(self, validationloader):
         """

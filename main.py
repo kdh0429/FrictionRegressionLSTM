@@ -47,7 +47,7 @@ def load_config(args):
     return config
 
 
-def run(config, trainloader, validatonloader, testloader, devloader=None):
+def run(config, trainloader, validatonloader, testloader, offline_test_free_loader=None, offline_test_collision_loader=None, devloader=None):
     current_time = datetime.now().strftime('%Y_%m_%d_%H_%M')
     checkpoint_directory = os.path.join(
         config['paths']['checkpoints_directory'],
@@ -58,8 +58,10 @@ def run(config, trainloader, validatonloader, testloader, devloader=None):
     lstm = FrictionLSTM(config, checkpoint_directory)
     lstm.to(config['device']['device'])
     lstm.fit(trainloader, validatonloader)
-    lstm.test(testloader)
-
+    if offline_test_collision_loader is None or offline_test_collision_loader is None:
+        lstm.test(testloader)
+    else:
+        lstm.test(testloader,offline_test_free_loader,offline_test_collision_loader)
 
 if __name__ == '__main__':
     args = argparser()
@@ -113,4 +115,30 @@ if __name__ == '__main__':
         num_workers=8,
         pin_memory=False)
 
-    run(config, trainloader, validationloader, testloader)
+    if config.getboolean("offline_test", "offline_test") is True:
+        offfline_test_free_data_file_name = config.get("paths", "offline_test_free_data_file_name")
+        offline_test_free_csv_path = os.path.join(data_dir, offfline_test_free_data_file_name)
+        offline_test_free_data = FrictionDataset(offline_test_free_csv_path,seq_len=data_seq_len, n_input_feat=data_num_input_feat, n_output=data_num_output)
+        offline_test_free_loader = DataLoader(
+            offline_test_free_data,
+            batch_size=config.getint("training", "batch_size"),
+            shuffle=False,
+            drop_last=True,
+            num_workers=8,
+            pin_memory=False)
+
+        offfline_test_collision_data_file_name = config.get("paths", "offline_test_collision_data_file_name")
+        offline_test_collision_csv_path = os.path.join(data_dir, offfline_test_collision_data_file_name)
+        offline_test_collision_data = FrictionDataset(offline_test_collision_csv_path,seq_len=data_seq_len, n_input_feat=data_num_input_feat, n_output=data_num_output)
+        offline_test_collision_loader = DataLoader(
+            offline_test_collision_data,
+            batch_size=config.getint("training", "batch_size"),
+            shuffle=False,
+            drop_last=True,
+            num_workers=8,
+            pin_memory=False)
+
+        run(config, trainloader, validationloader, testloader,offline_test_free_loader,offline_test_collision_loader)
+        
+    else:
+        run(config, trainloader, validationloader, testloader)

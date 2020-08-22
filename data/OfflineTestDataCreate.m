@@ -2,14 +2,18 @@ clear all
 clc
 format long
 
-%% For normalization
+%%
+Original_hz = 1000;
+Reduced_hz = 1000;
+Reduced_interval = Original_hz / Reduced_hz;
 
+%% For normalization
+Data_type_list = ["collision", "free"];
 Tool_list = ["0_00kg", "2_01kg", "5_01kg"];
-Collision_Aggregate_Data = [];
 Free_Aggregate_Data = [];
 
-hz = 100;
-num_data_type = 1; % ee_acc, k_m*i_m-torque_dyna, qdot
+process_hz = 100;
+num_data_type = 2; % ee_acc, k_m*i_m-torque_dyna, qdot
 num_input = 6*num_data_type;
 num_output = 6;
 num_time_step = 20;
@@ -54,86 +58,49 @@ Max20thQdotError = [ 0.031172751000000   0.028223563000000   0.039852978000000  
 Min20thQdotError = [-0.031008746000000  -0.029433469920000  -0.037408829000000  -0.038431840000000  -0.037999309000000  -0.029778584000000];
 Max20thResidual = 1.0e+02 *[0.715035307734275   1.128515541188526   0.575813461181604   0.163309853127513   0.154459616283777   0.142164542882543];
 Min20thResidual = [-80.166038214349328 -80.132255988399351 -40.113022996580639 -16.015880439586539 -15.565110364033590 -14.851047206438022];
-%% Training Set
+Max20thEncoderError = [0.002700000000000   0.002100000000000   0.002200000000000   0.003100000000000   0.001120000000000   0.002300000000000];
+Min20thEncoderError = [-0.001300000000000  -0.002870000000000  -0.002480000000000  -0.003400000000000  -0.001300000000000  -0.002400000000000];
+%% Free Motion
+cd ..
+cd ..
+cd Offline_Experiment/20191122_Test/robot1/0_00kg
 
-% robot1 데이터가 포함된 폴더명 검색
-FolderName = dir;
-folder_idx = 1;
-for time_step = 1:size(FolderName,1)
-    if ((size(FolderName(time_step).name,2) > 5) && (strcmp(FolderName(time_step).name(1:6), 'robot1')))
-        DataFolderList(folder_idx) = string(FolderName(time_step).name);
-        folder_idx = folder_idx + 1;
-    end
-end
-
-
-% 폴더별 자유모션 데이터 합치기 
-for joint_data = 1:size(DataFolderList,2)
-    cd (DataFolderList(joint_data))
-    FolderName = dir;
-    for k = 1:size(FolderName,1)
-        if strcmp(FolderName(k).name, 'free')
-            cd('free')
-            cd ('0_00kg');
-            NumFreeExpFolderName = dir;
-            for collision_num =1:size(NumFreeExpFolderName,1)-2
-                cd (int2str(collision_num))
-                disp(size(Free_Aggregate_Data,1))
-                pwd
-                Data = load('Reduced_DRCL_Data_Resi.txt');
-                Free_Aggregate_Data = vertcat(Free_Aggregate_Data, Data);
-                cd ..;
-            end
-            cd ..;
-            cd ..;
-        end
-    end
-    cd ..;
-end
-
-RawData= zeros(size(Free_Aggregate_Data));
-FreeProcessData= zeros(size(Free_Aggregate_Data,1), num_input*num_time_step+num_output);
 FreeProcessDataIdx = 1;
-recent_wrong_dt_idx = 0;
-
-for k=num_time_step:size(Free_Aggregate_Data,1)
-    % Check time stamp
-    dt_data = round(Free_Aggregate_Data(k,1) - Free_Aggregate_Data(k-1,1),3);
-    if dt_data ~= 1/hz
-        recent_wrong_dt_idx = k;
-    end
-        
-    if k < recent_wrong_dt_idx + num_time_step
-        continue
-    end
+for data_idx = 1:2
+    cd (Data_type_list(data_idx))
     
-    % Output
-    for joint_data = 1:6
-        FreeProcessData(FreeProcessDataIdx,num_input*num_time_step+joint_data) = Free_Aggregate_Data(k,85+joint_data);
-    end
+    Data_Aggregate = load('DRCL_Data_Resi.txt');
+    % Data Process
+    TestProcessData= zeros(size(Data_Aggregate,1), num_input*num_time_step+num_output); % Log Torque sensor and DOB result also
+    TestProcessDataIdx = 1;
+    recent_wrong_dt_idx = 0;
     
-    % Input
-   for time_step=1:num_time_step
-        for joint_data=1:6
-            FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+joint_data) = 2*(Free_Aggregate_Data(k-time_step+1,13+joint_data) - MinTrainingData(1,13+joint_data)) / (MaxTrainingData(1,13+joint_data) - MinTrainingData(1,13+joint_data)) -1; % qdot
+    for k=Reduced_hz/process_hz*num_time_step:size(Data_Aggregate,1)
+        % Check time stamp
+        dt_data = round(Data_Aggregate(k,1) - Data_Aggregate(k-Reduced_hz/process_hz,1),3);
+        if dt_data ~= 1/process_hz
+            recent_wrong_dt_idx = k;
         end
+        
+        if k < recent_wrong_dt_idx + num_time_step
+            continue
+        end
+        
+        % Output
+        for joint_data = 1:6
+            TestProcessData(TestProcessDataIdx,num_input*num_time_step+joint_data) = Data_Aggregate(k,85+joint_data);
+        end
+
+        % Input
+        for time_step=1:num_time_step
+            for joint_data=1:6
+                TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),13+joint_data) - MinTrainingData(1,13+joint_data)) / (MaxTrainingData(1,13+joint_data) - MinTrainingData(1,13+joint_data)) -1; % qdot
+                TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+6+joint_data) = 2*((Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),7+joint_data) - Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),37+joint_data)) - Min20thEncoderError(1,joint_data)) / (Max20thEncoderError(1,joint_data) - Min20thEncoderError(1,joint_data)) -1; % qdot
+            end
+        end
+        
+        TestProcessDataIdx = TestProcessDataIdx +1;
     end
-    FreeProcessDataIdx = FreeProcessDataIdx +1;
+    csvwrite('DRCL_Data_Process_LSTM.csv', TestProcessData(1:TestProcessDataIdx-1,:));
+    cd ..
 end
-
-disp(size(Free_Aggregate_Data,1))
-TestingRaw = Free_Aggregate_Data(fix(0.8*size(FreeProcessData,1)):fix(0.9*size(FreeProcessData,1)),:);
-clear Free_Aggregate_Data;
-
-TrainingData = FreeProcessData(1:fix(0.8*size(FreeProcessData,1)),:);
-ValidationData = FreeProcessData(fix(0.8*size(FreeProcessData,1)):fix(0.9*size(FreeProcessData,1)),:);
-TestingData = FreeProcessData(fix(0.9*size(FreeProcessData,1)):size(FreeProcessData,1),:);
-clear FreeProcessData;
-
-TrainingDataMix = TrainingData(randperm(size(TrainingData,1)),:);
-clear TrainingData;
-
-csvwrite('TestingDataRaw.csv', TestingRaw);
-csvwrite('TrainingDataFriction.csv', TrainingDataMix);
-csvwrite('ValidationDataFriction.csv', ValidationData);
-csvwrite('TestingDataFriction.csv', TestingData);

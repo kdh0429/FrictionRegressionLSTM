@@ -8,7 +8,7 @@ Tool_list = ["0_00kg", "2_01kg", "5_01kg"];
 Free_Aggregate_Data = [];
 
 hz = 100;
-num_data_type = 1; % ee_acc, k_m*i_m-torque_dyna, qdot
+num_data_type = 2; % ee_acc, k_m*i_m-torque_dyna, qdot
 num_input = 6*num_data_type;
 num_output = 6;
 num_time_step = 20;
@@ -53,6 +53,8 @@ Max20thQdotError = [ 0.031172751000000   0.028223563000000   0.039852978000000  
 Min20thQdotError = [-0.031008746000000  -0.029433469920000  -0.037408829000000  -0.038431840000000  -0.037999309000000  -0.029778584000000];
 Max20thResidual = 1.0e+02 *[0.715035307734275   1.128515541188526   0.575813461181604   0.163309853127513   0.154459616283777   0.142164542882543];
 Min20thResidual = [-80.166038214349328 -80.132255988399351 -40.113022996580639 -16.015880439586539 -15.565110364033590 -14.851047206438022];
+Max20thEncoderError = [0.002700000000000   0.002100000000000   0.002200000000000   0.003100000000000   0.001120000000000   0.002300000000000];
+Min20thEncoderError = [-0.001300000000000  -0.002870000000000  -0.002480000000000  -0.003400000000000  -0.001300000000000  -0.002400000000000];
 %% Training Set
 
 % robot1 데이터가 포함된 폴더명 검색
@@ -115,6 +117,7 @@ for k=num_time_step:size(Free_Aggregate_Data,1)
    for time_step=1:num_time_step
         for joint_data=1:6
             FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+joint_data) = 2*(Free_Aggregate_Data(k-time_step+1,13+joint_data) - MinTrainingData(1,13+joint_data)) / (MaxTrainingData(1,13+joint_data) - MinTrainingData(1,13+joint_data)) -1; % qdot
+            FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+6+joint_data) = 2*((Free_Aggregate_Data(k-time_step+1,7+joint_data)-Free_Aggregate_Data(k-time_step+1,37+joint_data)) - Min20thEncoderError(1,joint_data)) / (Max20thEncoderError(1,joint_data) - Min20thEncoderError(1,joint_data)) -1; % encoder difference
         end
    end
    
@@ -127,7 +130,7 @@ disp(FreeProcessDataIdx)
 clear Free_Aggregate_Data;
 
 TrainingRaw = RawData(1:fix(0.8*FreeProcessDataIdx),:);
-TestingRaw = RawData(fix(0.9*FreeProcessDataIdx):fix(FreeProcessDataIdx),:);
+TestingRaw = RawData(fix(0.9*FreeProcessDataIdx):FreeProcessDataIdx,:);
 
 TrainingData = FreeProcessData(1:fix(0.8*FreeProcessDataIdx),:);
 ValidationData = FreeProcessData(fix(0.8*FreeProcessDataIdx):fix(0.9*FreeProcessDataIdx),:);

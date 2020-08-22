@@ -35,6 +35,8 @@ end
 cd ..
 cd result
 FrictionModelLSTM = load('testing_result.csv');
+FrictionModelLSTM = [ResidualEstimate(1,:);FrictionModelLSTM]; % pandas does not read the first line
+LSTMDataNum = size(FrictionModelLSTM,1);
 
 %% Plot Trajectory
 f1 = figure;
@@ -45,7 +47,8 @@ for j=1:6
     plot(ResidualEstimate(:,j))
     plot(FrictionModelPoly(:,j))
     plot(FrictionModelLSTM(:,j))
-    legend('GT','MOB','Poly','LSTM')
+    plot(FrictionModelDoosan(:,j))
+    legend('GT','MOB','Poly','LSTM','Doosan')
 end
 
 %% Plot qdot
@@ -53,14 +56,46 @@ f2 = figure;
 qdot = [0:0.001:2.1]';
 
 for i=1:6
-fm(:,i) = polyval(p(:,i),qdot);
+    fm(:,i) = polyval(p(:,i),qdot);
 end
 
 for j= 1:6
     subplot(2,3,j)
-    plot(abs(VelMFree(1:size(FrictionModelLSTM,1),j)), abs(ResidualEstimate(1:size(FrictionModelLSTM,1),j)))
+    plot(abs(VelMFree(1:LSTMDataNum,j)), abs(ResidualEstimate(1:LSTMDataNum,j)))
     hold on
-    plot(abs(VelMFree(1:size(FrictionModelLSTM,1),j)), abs(FrictionModelLSTM(:,j)))
+    plot(abs(VelMFree(1:LSTMDataNum,j)), abs(FrictionModelLSTM(:,j)))
     plot(qdot,fm(:,j))
     legend('MOB','LSTM','Poly')
 end
+
+%% Plot Error histogram
+Reisudal = ResidualEstimate(1:LSTMDataNum,:);
+PolyErr = Reisudal(1:LSTMDataNum,:)-FrictionModelPoly(1:LSTMDataNum,:);
+LSTMErr = Reisudal(1:LSTMDataNum,:)-FrictionModelLSTM;
+f3 = figure;
+
+num_bin = 100;
+bin_max = [20,30,15,6,5,10];
+bin_min = [-20,-30,-15,-6,-5,-10];
+bin_arr = [bin_min(1):(bin_max(1)-bin_min(1))/num_bin:bin_max(1); ...
+    bin_min(2):(bin_max(2)-bin_min(2))/num_bin:bin_max(2); ...
+    bin_min(3):(bin_max(3)-bin_min(3))/num_bin:bin_max(3); ...
+    bin_min(4):(bin_max(4)-bin_min(4))/num_bin:bin_max(4); ...
+    bin_min(5):(bin_max(5)-bin_min(5))/num_bin:bin_max(5); ...
+    bin_min(6):(bin_max(6)-bin_min(6))/num_bin:bin_max(6)];
+
+for j=1:6
+    subplot(2,3,j)
+    histogram(PolyErr(:,j),bin_arr(j,:))
+    hold on
+    histogram(LSTMErr(:,j),bin_arr(j,:))
+    legend('Poly', 'LSTM')
+end
+
+disp('Poly Error Mean: ')
+mean(abs(PolyErr),1)
+disp('LSTM Error Mean: ')
+mean(abs(LSTMErr),1)
+disp('LSTM Threshold: ')
+[threshold, idx] = max(abs(LSTMErr),[],1)
+
