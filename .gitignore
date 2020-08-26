@@ -9,6 +9,8 @@ data/TrainingDataRaw.csv
 data/ValidationDataFriction.csv
 data/OfflineTestingCollisionDataFriction.csv
 data/OfflineTestingFreeDataFriction.csv
+data/OfflineTestingCollisionDataFrictionRaw.csv
+data/OfflineTestingFreeDataFrictionRaw.csv
 
 # Model
 checkpoints/
