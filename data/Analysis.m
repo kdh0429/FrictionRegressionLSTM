@@ -2,6 +2,9 @@ clc
 clear all;
 format long
 
+%%
+plot_start = 66000;
+plot_end = 69700;
 %% Doosan Model
 TestingRaw = load('TestingDataRaw.csv');
 FrictionModelDoosan = TestingRaw(:,50:55);
@@ -10,6 +13,7 @@ FrictionModelDoosan = TestingRaw(:,50:55);
 Motor_Torque = TestingRaw(:,2:7);
 JTS = TestingRaw(:,68:73);
 VelMFree = TestingRaw(:,14:19);
+EncoDiff = TestingRaw(:,8:13)-TestingRaw(:,38:43);
 
 %% MOB
 ResidualEstimate = TestingRaw(:,86:91);
@@ -64,14 +68,14 @@ for j= 1:6
     plot(abs(VelMFree(1:LSTMDataNum,j)), abs(ResidualEstimate(1:LSTMDataNum,j)))
     hold on
     plot(abs(VelMFree(1:LSTMDataNum,j)), abs(FrictionModelLSTM(:,j)))
-    plot(qdot,fm(:,j))
+    plot(qdot(:),fm(:,j))
     legend('MOB','LSTM','Poly')
 end
 
 %% Plot Error histogram
-Reisudal = ResidualEstimate(1:LSTMDataNum,:);
-PolyErr = Reisudal(1:LSTMDataNum,:)-FrictionModelPoly(1:LSTMDataNum,:);
-LSTMErr = Reisudal(1:LSTMDataNum,:)-FrictionModelLSTM;
+Residual = ResidualEstimate(1:LSTMDataNum,:);
+PolyErr = Residual(1:LSTMDataNum,:)-FrictionModelPoly(1:LSTMDataNum,:);
+LSTMErr = Residual(1:LSTMDataNum,:)-FrictionModelLSTM;
 f3 = figure;
 
 num_bin = 100;
@@ -99,3 +103,15 @@ mean(abs(LSTMErr),1)
 disp('LSTM Threshold: ')
 [threshold, idx] = max(abs(LSTMErr),[],1)
 
+%% Plot Trajectory
+f4 = figure;
+for j=1:6
+    subplot(2,3,j)
+    plot(Motor_Torque(plot_start:plot_end,j) - JTS(plot_start:plot_end,j))
+    hold on
+    plot(ResidualEstimate(plot_start:plot_end,j))
+    plot(FrictionModelPoly(plot_start:plot_end,j))
+    plot(FrictionModelLSTM(plot_start:plot_end,j))
+    plot(FrictionModelDoosan(plot_start:plot_end,j))
+    legend('GT','MOB','Poly','LSTM','Doosan')
+end

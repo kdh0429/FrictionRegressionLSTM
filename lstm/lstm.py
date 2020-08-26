@@ -120,29 +120,21 @@ class FrictionLSTM(nn.Module):
         
         if offline_test_free_loader is not None:
             predictions = []
-            test_losses = []
 
             for inputs, outputs in offline_test_free_loader:
                 inputs = inputs.to(self._device)
-                outputs = outputs.to(self._device)
                 preds = self.forward(inputs)
-                test_loss = nn.L1Loss(reduction='sum')(preds, outputs) / inputs.shape[0]
                 predictions.extend(self._to_numpy(preds))
-                test_losses.append(self._to_numpy(test_loss))
 
             np.savetxt("./result/offline_testing_result_free.csv", predictions, delimiter=",")
 
         if offline_test_collision_loader is not None:
             predictions = []
-            test_losses = []
 
             for inputs, outputs in offline_test_collision_loader:
                 inputs = inputs.to(self._device)
-                outputs = outputs.to(self._device)
                 preds = self.forward(inputs)
-                test_loss = nn.L1Loss(reduction='sum')(preds, outputs) / inputs.shape[0]
                 predictions.extend(self._to_numpy(preds))
-                test_losses.append(self._to_numpy(test_loss))
 
             np.savetxt("./result/offline_testing_result_collision.csv", predictions, delimiter=",")
 

@@ -123,7 +123,7 @@ if __name__ == '__main__':
             offline_test_free_data,
             batch_size=config.getint("training", "batch_size"),
             shuffle=False,
-            drop_last=True,
+            drop_last=False,
             num_workers=8,
             pin_memory=False)
 
@@ -134,7 +134,7 @@ if __name__ == '__main__':
             offline_test_collision_data,
             batch_size=config.getint("training", "batch_size"),
             shuffle=False,
-            drop_last=True,
+            drop_last=False,
             num_workers=8,
             pin_memory=False)
 

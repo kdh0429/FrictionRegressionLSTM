@@ -13,7 +13,7 @@ Tool_list = ["0_00kg", "2_01kg", "5_01kg"];
 Free_Aggregate_Data = [];
 
 process_hz = 100;
-num_data_type = 2; % ee_acc, k_m*i_m-torque_dyna, qdot
+num_data_type = 3; % ee_acc, k_m*i_m-torque_dyna, qdot
 num_input = 6*num_data_type;
 num_output = 6;
 num_time_step = 20;
@@ -70,7 +70,6 @@ for data_idx = 1:2
     cd (Data_type_list(data_idx))
     
     Data_Aggregate = load('DRCL_Data_Resi.txt');
-    RawData= zeros(size(Data_Aggregate));
     % Data Process
     TestProcessData= zeros(size(Data_Aggregate,1), num_input*num_time_step+num_output); % Log Torque sensor and DOB result also
     TestProcessDataIdx = 1;
@@ -98,23 +97,18 @@ for data_idx = 1:2
                 TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),13+joint_data) - MinTrainingData(1,13+joint_data)) / (MaxTrainingData(1,13+joint_data) - MinTrainingData(1,13+joint_data)) -1; % theta dot
                 %TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+6+joint_data) = 2*((Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),7+joint_data) - Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),37+joint_data)) - Min20thEncoderError(1,joint_data)) / (Max20thEncoderError(1,joint_data) - Min20thEncoderError(1,joint_data)) -1; % qdot
                 TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+6+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),7+joint_data) - MinTrainingData(1,7+joint_data)) / (MaxTrainingData(1,7+joint_data) - MinTrainingData(1,7+joint_data)) -1; % theta
-                %TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+12+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),1+joint_data) - MinTrainingData(1,1+joint_data)) / (MaxTrainingData(1,1+joint_data) - MinTrainingData(1,1+joint_data)) -1; % motor torque
+                TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+12+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),1+joint_data) - MinTrainingData(1,1+joint_data)) / (MaxTrainingData(1,1+joint_data) - MinTrainingData(1,1+joint_data)) -1; % motor torque
             end
         end
         
-        RawData(TestProcessDataIdx,:) = Data_Aggregate(k,:);
         TestProcessDataIdx = TestProcessDataIdx +1;
     end
-    TestProcessDataIdx = TestProcessDataIdx-1;
-    
     cd ../../../../../FrictionRegression/data
     if Data_type_list(data_idx)=="free"
-        csvwrite('OfflineTestingFreeDataFriction.csv', TestProcessData(1:TestProcessDataIdx,:));
-        csvwrite('OfflineTestingFreeDataFrictionRaw.csv', RawData(1:TestProcessDataIdx,:));
+        csvwrite('OfflineTestingFreeDataFriction.csv', TestProcessData(1:TestProcessDataIdx-1,:));
     end
     if Data_type_list(data_idx)=="collision"
-        csvwrite('OfflineTestingCollisionDataFriction.csv', TestProcessData(1:TestProcessDataIdx,:));
-        csvwrite('OfflineTestingCollisionDataFrictionRaw.csv', RawData(1:TestProcessDataIdx,:));
+        csvwrite('OfflineTestingCollisionDataFriction.csv', TestProcessData(1:TestProcessDataIdx-1,:));
     end
     
     cd ../../Offline_Experiment/20191122_Test/robot1/0_00kg
