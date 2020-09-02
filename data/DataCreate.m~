@@ -8,7 +8,7 @@ Tool_list = ["0_00kg", "2_01kg", "5_01kg"];
 Free_Aggregate_Data = [];
 
 hz = 100;
-num_data_type = 3; % ee_acc, k_m*i_m-torque_dyna, qdot
+num_data_type = 4; % ee_acc, k_m*i_m-torque_dyna, qdot
 num_input = 6*num_data_type;
 num_output = 6;
 num_time_step = 20;
@@ -37,8 +37,8 @@ MinTrainingData = ...
 -3.13776299100000,-1.22147945000000,-1.57055937900000,-1.74494092400000,-1.74513995700000,-2.09412678200000, ... % 목표 각도
 -2.09297770800000,-2.00518303100000,-2.08250773800000,-2.09206368700000,-2.08361237700000,-2.09256922000000, ... % 목표 각속도
 -37.3276679915200,-162.457141878560,-68.2669754086000,-12.5635610481280,-14.1346787184800,-2.08469780631839, ... % 동적 토크
--3.13828500800000,-1.22390095300000,-1.57139553800000,-1.74694046400000,-1.74454361900000,-2.09486648200000, ... % 절대엔코더 각도
--2.37287653100000,-2.25303428200000,-2.34890808100000,-2.27700273200000,-2.30097118200000,-2.34890809999999, ... % 절대엔코더 각속도 
+-3.14051407300000,-1.22378111000000,-1.56902266200000,-1.74646109500000,-1.74485520900000,-2.09647236800000, ... % 절대엔코더 각도
+-2.37287653100000,-2.22906583200000,-2.22906583200000,-2.34890808100000,-2.32493963200000,-2.37287650000007, ... % 절대엔코더 각속도
 -47.9859685900000,-61.6178723100000,-35.7297740200000,-15.0662095000000,-13.3583373700000,-12.8466518500000, ... % 추정 마찰력
 35.027187499999997,34.382656249999997,35.671718749999997,37.218593749999997,36.574062499999997,34.640468749999997, ... % 온도
 -23.0191386928541,-21.7926650199891,-14.9436694473599, ... % 말단 가속도
@@ -53,8 +53,10 @@ Max20thQdotError = [ 0.031172751000000   0.028223563000000   0.039852978000000  
 Min20thQdotError = [-0.031008746000000  -0.029433469920000  -0.037408829000000  -0.038431840000000  -0.037999309000000  -0.029778584000000];
 Max20thEncoderError = [0.002700000000000   0.002100000000000   0.002200000000000   0.003100000000000   0.001120000000000   0.002300000000000];
 Min20thEncoderError = [-0.001300000000000  -0.002870000000000  -0.002480000000000  -0.003400000000000  -0.001300000000000  -0.002400000000000];
-MaxQddot = [6.0 6.0 6.0 6.0 6.0 6.0];
+MaxQddot = [3.648090000000089   3.039999999999998   4.350000000000009   3.688000000000002   3.299999999999993   3.420000000000001];
 MinQddot = -MaxQddot;
+MaxQdotSquare = [4.327232040000000   3.095168158300030   3.891616310800066   4.051802643100034   4.135158853900035   4.184516181700033];
+MinQdotSquare = [0 0 0 0 0 0];
 %% Data Set Concatenate
 
 % robot1 데이터가 포함된 폴더명 검색
@@ -92,11 +94,9 @@ for joint_data = 1:size(DataFolderList,2)
     cd ..;
 end
 %% Residual Min Max
-[ResidualMaxArr, idx_arr] = maxk(Free_Aggregate_Data(:,86:91),20,1);
-Max20thResidual = ResidualMaxArr(20,:);
-Min20thResidual = -Max20thResidual;
-Max20thResidual = 1.0e+02 *[0.715035307734275   1.128515541188526   0.575813461181604   0.163309853127513   0.154459616283777   0.142164542882543];
-csvwrite('ResiMax.csv', Max20thResidual);
+MaxResidual = prctile(Free_Aggregate_Data(:,86:91),99.9,1);
+MinResidual = -MaxResidual;
+csvwrite('ResiMax.csv', MaxResidual);
 
 %% Data Preprocess
 RawData= zeros(size(Free_Aggregate_Data));
@@ -121,7 +121,7 @@ for k=num_time_step:size(Free_Aggregate_Data,1)
     
     % Output
     for joint_data = 1:6
-        FreeProcessData(FreeProcessDataIdx,num_input*num_time_step+joint_data) = 2*(Free_Aggregate_Data(k,85+joint_data) - Min20thResidual(joint_data))/(Max20thResidual(joint_data) - Min20thResidual(joint_data)) -1;
+        FreeProcessData(FreeProcessDataIdx,num_input*num_time_step+joint_data) = 2*(Free_Aggregate_Data(k,85+joint_data) - MinResidual(joint_data))/(MaxResidual(joint_data) - MinResidual(joint_data)) -1;
     end
     
     % Input
@@ -134,6 +134,7 @@ for k=num_time_step:size(Free_Aggregate_Data,1)
             FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+12+joint_data) = 2*((Free_Aggregate_Data(k-time_step+1,13+joint_data) - Free_Aggregate_Data(k-time_step,13+joint_data))*hz - MinQddot(1,joint_data)) / (MaxQddot(1,joint_data) - MinQddot(1,joint_data)) -1; % theta_ddot
             %FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+12+joint_data)= 2*(Free_Aggregate_Data(k-time_step,13+joint_data) - MinTrainingData(1,13+joint_data)) / (MaxTrainingData(1,13+joint_data) -MinTrainingData(1,13+joint_data)) -1; %theta_dot_pre
             %FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+18+joint_data) = 2*(Free_Aggregate_Data(k-time_step+1,55+joint_data) - MinTrainingData(1,55+joint_data)) / (MaxTrainingData(1,55+joint_data) - MinTrainingData(1,55+joint_data)) -1; % temperature
+            FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+6+joint_data) = 2*(Free_Aggregate_Data(k-time_step+1,7+joint_data) - MinTrainingData(1,7+joint_data)) / (MaxTrainingData(1,7+joint_data) - MinTrainingData(1,7+joint_data)) -1; % theta
         end
    end
    
