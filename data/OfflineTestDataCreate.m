@@ -74,7 +74,7 @@ for data_idx = 1:2
     cd (Data_type_list(data_idx))
     pwd
     
-    Data_Aggregate = load('DRCL_Data_Resi_Modeling_Error_Inertia_50.txt');
+    Data_Aggregate = load('DRCL_Data_Resi_Modeling_Error_COM_50.txt');
     RawData= zeros(size(Data_Aggregate));
     % Data Process
     TestProcessData= zeros(size(Data_Aggregate,1), num_input*num_time_step+num_output); % Log Torque sensor and DOB result also
