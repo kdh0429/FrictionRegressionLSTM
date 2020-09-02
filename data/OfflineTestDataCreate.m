@@ -60,6 +60,8 @@ Max20thResidual = load('ResiMax.csv');
 Min20thResidual = -Max20thResidual;
 Max20thEncoderError = [0.002700000000000   0.002100000000000   0.002200000000000   0.003100000000000   0.001120000000000   0.002300000000000];
 Min20thEncoderError = [-0.001300000000000  -0.002870000000000  -0.002480000000000  -0.003400000000000  -0.001300000000000  -0.002400000000000];
+MaxQddot = [6.0 6.0 6.0 6.0 6.0 6.0];
+MinQddot = -MaxQddot;
 %% Free Motion
 cd ..
 cd ..
@@ -68,6 +70,7 @@ cd Offline_Experiment/20191122_Test/robot1/0_00kg
 FreeProcessDataIdx = 1;
 for data_idx = 1:2
     cd (Data_type_list(data_idx))
+    pwd
     
     Data_Aggregate = load('DRCL_Data_Resi_Modeling_Error_COM_50.txt');
     RawData= zeros(size(Data_Aggregate));
@@ -103,7 +106,8 @@ for data_idx = 1:2
                 %TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+6+joint_data) = 2*((Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),7+joint_data) - Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),37+joint_data)) - Min20thEncoderError(1,joint_data)) / (Max20thEncoderError(1,joint_data) - Min20thEncoderError(1,joint_data)) -1; % qdot
                 TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+6+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),7+joint_data) - MinTrainingData(1,7+joint_data)) / (MaxTrainingData(1,7+joint_data) - MinTrainingData(1,7+joint_data)) -1; % theta
                 %TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+6+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),1+joint_data) - MinTrainingData(1,1+joint_data)) / (MaxTrainingData(1,1+joint_data) - MinTrainingData(1,1+joint_data)) -1; % motor torque
-                TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+12+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step),13+joint_data) - MinTrainingData(1,13+joint_data)) / (MaxTrainingData(1,13+joint_data) - MinTrainingData(1,13+joint_data)) -1; % theta dot
+                TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+12+joint_data) = 2*((Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),13+joint_data) - Data_Aggregate(k-Reduced_hz/process_hz*(time_step),13+joint_data))*process_hz - MinQddot(1,joint_data)) / (MaxQddot(1,joint_data) - MinQddot(1,joint_data)) -1; % theta ddot
+                %TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+12+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step),13+joint_data) - MinTrainingData(1,13+joint_data)) / (MaxTrainingData(1,13+joint_data) - MinTrainingData(1,13+joint_data)) -1; % theta dot pre
             end
         end
         
