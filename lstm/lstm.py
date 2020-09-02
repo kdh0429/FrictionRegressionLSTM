@@ -11,7 +11,6 @@ import torch
 from torch import nn
 from torch import optim
 from torch.nn import functional as F
-from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 import wandb
 
 

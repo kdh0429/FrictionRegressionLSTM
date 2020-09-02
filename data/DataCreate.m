@@ -81,7 +81,7 @@ for joint_data = 1:size(DataFolderList,2)
                 cd (int2str(collision_num))
                 disp(size(Free_Aggregate_Data,1))
                 pwd
-                Data = load('Reduced_DRCL_Data_Resi_Modeling_Error_COM_50.txt');
+                Data = load('Reduced_DRCL_Data_Resi_Modeling_Error_Inertia_50.txt');
                 Free_Aggregate_Data = vertcat(Free_Aggregate_Data, Data);
                 cd ..;
             end
