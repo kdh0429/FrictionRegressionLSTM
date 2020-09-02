@@ -45,7 +45,6 @@ class FrictionLSTM(nn.Module):
         self.lstm = nn.LSTM(**lstm_structure_config_dict)
         self.linear = nn.Linear(lstm_structure_config_dict["hidden_size"],self.config.getint("data", "n_output"))
 
-
         self._optim = optim.Adam(
             self.parameters(),
             lr=config.getfloat('training', 'lr'),
@@ -69,6 +68,12 @@ class FrictionLSTM(nn.Module):
             print("--------------------------------------------------------")
             print("Training Epoch ", epoch)
             self.cur_epoch += 1
+            if epoch > self.num_epochs/2:
+                self._optim = optim.Adam(
+                    self.parameters(),
+                    lr=self.config.getfloat('training', 'lr')/2.0,
+                    betas=json.loads(self.config['training']['betas'])
+                )
 
             # temporary storage
             train_losses = []
@@ -99,6 +104,8 @@ class FrictionLSTM(nn.Module):
                 wandb_dict['Training Loss'] = np.mean(train_losses)
                 wandb_dict['Validation Loss'] = validation_loss
                 wandb.log(wandb_dict)
+
+        self.save_checkpoint(validation_loss)
 
     def test(self, testloader,offline_test_free_loader=None,offline_test_collision_loader=None):
         print("--------------------------- TEST ---------------------------")

@@ -1,10 +1,14 @@
-clc
 clear all;
+clc
 format long
 
 %%
 plot_start = 66000;
 plot_end = 69700;
+
+%%
+Max20thResidual = load('ResiMax.csv');
+Min20thResidual = -Max20thResidual;
 %% Doosan Model
 TestingRaw = load('TestingDataRaw.csv');
 FrictionModelDoosan = TestingRaw(:,50:55);
@@ -14,6 +18,7 @@ Motor_Torque = TestingRaw(:,2:7);
 JTS = TestingRaw(:,68:73);
 VelMFree = TestingRaw(:,14:19);
 EncoDiff = TestingRaw(:,8:13)-TestingRaw(:,38:43);
+Dyna = TestingRaw(:,32:37);
 
 %% MOB
 ResidualEstimate = TestingRaw(:,86:91);
@@ -38,9 +43,14 @@ end
 %% LSTM
 cd ..
 cd result
+
 FrictionModelLSTM = load('testing_result.csv');
+for i = 1:6
+    FrictionModelLSTM(:,i) = (Max20thResidual(i) - Min20thResidual(i)) * FrictionModelLSTM(:,i)/2 + (Max20thResidual(i) + Min20thResidual(i))/2;
+end
 FrictionModelLSTM = [ResidualEstimate(1,:);FrictionModelLSTM]; % pandas does not read the first line
 LSTMDataNum = size(FrictionModelLSTM,1);
+
 
 %% Plot Trajectory
 f1 = figure;
@@ -102,6 +112,7 @@ disp('LSTM Error Mean: ')
 mean(abs(LSTMErr),1)
 disp('LSTM Threshold: ')
 [threshold, idx] = max(abs(LSTMErr),[],1)
+csvwrite('Threshold.csv', threshold);
 
 %% Plot Trajectory
 f4 = figure;
@@ -115,3 +126,7 @@ for j=1:6
     plot(FrictionModelDoosan(plot_start:plot_end,j))
     legend('GT','MOB','Poly','LSTM','Doosan')
 end
+
+%%
+cd ../data
+OfflineAnalysis;

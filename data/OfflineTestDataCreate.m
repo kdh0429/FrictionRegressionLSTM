@@ -2,7 +2,7 @@ clear all
 clc
 format long
 
-%%
+%% Note that offline test is 1000hz
 Original_hz = 1000;
 Reduced_hz = 1000;
 Reduced_interval = Original_hz / Reduced_hz;
@@ -13,7 +13,7 @@ Tool_list = ["0_00kg", "2_01kg", "5_01kg"];
 Free_Aggregate_Data = [];
 
 process_hz = 100;
-num_data_type = 2; % ee_acc, k_m*i_m-torque_dyna, qdot
+num_data_type = 3; % ee_acc, k_m*i_m-torque_dyna, qdot
 num_input = 6*num_data_type;
 num_output = 6;
 num_time_step = 20;
@@ -37,8 +37,8 @@ MaxTrainingData = ...
 MinTrainingData = ...
 [0, ... % 시간 
 -75.0600000000000,-234.720000000000,-108.300000000000,-26.4768000000000,-25.3344000000000,-15.5008000000000, ... % 전류기반 토크 
--3.13787579100000,-1.22157833400000,-1.57062684600000,-1.74502295800000,-1.74520639000000,-2.09431329000000, ... % 엔코더 각도 
--2.10018224700000,-2.01267924600000,-2.09613675700000,-2.10906534100000,-2.09137321400000,-2.10129403300000, ... % 엔코더 각속도
+-3.14098465900000,-1.22155077600000,-1.56935367400000,-1.74515730300000,-1.74443907700000,-2.09445796900000, ... % 엔코더 각도 
+-2.10822396600000,-2.09336168400000,-2.09999140900000,-2.11034161300000,-2.10024253000000,-2.10095300500000, ... % 엔코더 각속도
 -3.13776299100000,-1.22147945000000,-1.57055937900000,-1.74494092400000,-1.74513995700000,-2.09412678200000, ... % 목표 각도
 -2.09297770800000,-2.00518303100000,-2.08250773800000,-2.09206368700000,-2.08361237700000,-2.09256922000000, ... % 목표 각속도
 -37.3276679915200,-162.457141878560,-68.2669754086000,-12.5635610481280,-14.1346787184800,-2.08469780631839, ... % 동적 토크
@@ -56,8 +56,8 @@ Max20thQError = [0.012423192000000   0.010965226000000   0.011863092200000   0.0
 Min20thQError = [-0.012298105000000  -0.010928819520000  -0.011940370700000  -0.011913867300000  -0.012024721700000  -0.012147427300000];
 Max20thQdotError = [ 0.031172751000000   0.028223563000000   0.039852978000000   0.037853069000000   0.039282329000000   0.029608574000000];
 Min20thQdotError = [-0.031008746000000  -0.029433469920000  -0.037408829000000  -0.038431840000000  -0.037999309000000  -0.029778584000000];
-Max20thResidual = 1.0e+02 *[0.715035307734275   1.128515541188526   0.575813461181604   0.163309853127513   0.154459616283777   0.142164542882543];
-Min20thResidual = [-80.166038214349328 -80.132255988399351 -40.113022996580639 -16.015880439586539 -15.565110364033590 -14.851047206438022];
+Max20thResidual = load('ResiMax.csv');
+Min20thResidual = -Max20thResidual;
 Max20thEncoderError = [0.002700000000000   0.002100000000000   0.002200000000000   0.003100000000000   0.001120000000000   0.002300000000000];
 Min20thEncoderError = [-0.001300000000000  -0.002870000000000  -0.002480000000000  -0.003400000000000  -0.001300000000000  -0.002400000000000];
 %% Free Motion
@@ -69,7 +69,7 @@ FreeProcessDataIdx = 1;
 for data_idx = 1:2
     cd (Data_type_list(data_idx))
     
-    Data_Aggregate = load('DRCL_Data_Resi.txt');
+    Data_Aggregate = load('DRCL_Data_Resi_Modeling_Error_COM_50.txt');
     RawData= zeros(size(Data_Aggregate));
     % Data Process
     TestProcessData= zeros(size(Data_Aggregate,1), num_input*num_time_step+num_output); % Log Torque sensor and DOB result also
@@ -78,8 +78,8 @@ for data_idx = 1:2
     
     for k=Reduced_hz/process_hz*num_time_step:size(Data_Aggregate,1)
         % Check time stamp
-        dt_data = round(Data_Aggregate(k,1) - Data_Aggregate(k-Reduced_hz/process_hz,1),3);
-        if dt_data ~= 1/process_hz
+        dt_data = round(Data_Aggregate(k,1) - Data_Aggregate(k-2*Reduced_hz/process_hz,1),3);
+        if dt_data ~= 2/process_hz
             recent_wrong_dt_idx = k;
         end
         
@@ -87,9 +87,13 @@ for data_idx = 1:2
             continue
         end
         
+        if norm(Data_Aggregate(k,26:31)) == 0
+            continue
+        end
+        
         % Output
         for joint_data = 1:6
-            TestProcessData(TestProcessDataIdx,num_input*num_time_step+joint_data) = Data_Aggregate(k,85+joint_data);
+            TestProcessData(TestProcessDataIdx,num_input*num_time_step+joint_data) = 2*(Data_Aggregate(k,85+joint_data) - Min20thResidual(joint_data))/(Max20thResidual(joint_data) - Min20thResidual(joint_data)) -1;
         end
 
         % Input
@@ -98,7 +102,8 @@ for data_idx = 1:2
                 TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),13+joint_data) - MinTrainingData(1,13+joint_data)) / (MaxTrainingData(1,13+joint_data) - MinTrainingData(1,13+joint_data)) -1; % theta dot
                 %TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+6+joint_data) = 2*((Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),7+joint_data) - Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),37+joint_data)) - Min20thEncoderError(1,joint_data)) / (Max20thEncoderError(1,joint_data) - Min20thEncoderError(1,joint_data)) -1; % qdot
                 TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+6+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),7+joint_data) - MinTrainingData(1,7+joint_data)) / (MaxTrainingData(1,7+joint_data) - MinTrainingData(1,7+joint_data)) -1; % theta
-                %TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+12+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),1+joint_data) - MinTrainingData(1,1+joint_data)) / (MaxTrainingData(1,1+joint_data) - MinTrainingData(1,1+joint_data)) -1; % motor torque
+                %TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+6+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step-1),1+joint_data) - MinTrainingData(1,1+joint_data)) / (MaxTrainingData(1,1+joint_data) - MinTrainingData(1,1+joint_data)) -1; % motor torque
+                TestProcessData(TestProcessDataIdx,num_input*(num_time_step-time_step)+12+joint_data) = 2*(Data_Aggregate(k-Reduced_hz/process_hz*(time_step),13+joint_data) - MinTrainingData(1,13+joint_data)) / (MaxTrainingData(1,13+joint_data) - MinTrainingData(1,13+joint_data)) -1; % theta dot
             end
         end
         
