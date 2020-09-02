@@ -59,8 +59,10 @@ for j=1:6
     plot(Motor_Torque(:,j) - JTS(:,j))
     hold on
     plot(ResidualEstimate(:,j))
+    plot(FrictionModelPoly(:,j))
     plot(FrictionModelLSTM(:,j))
-    legend('GT','MOB','LSTM')
+    plot(FrictionModelDoosan(:,j))
+    legend('GT','MOB','Poly','LSTM')
 end
 
 %% Plot qdot

@@ -56,11 +56,11 @@ Max20thQError = [0.012423192000000   0.010965226000000   0.011863092200000   0.0
 Min20thQError = [-0.012298105000000  -0.010928819520000  -0.011940370700000  -0.011913867300000  -0.012024721700000  -0.012147427300000];
 Max20thQdotError = [ 0.031172751000000   0.028223563000000   0.039852978000000   0.037853069000000   0.039282329000000   0.029608574000000];
 Min20thQdotError = [-0.031008746000000  -0.029433469920000  -0.037408829000000  -0.038431840000000  -0.037999309000000  -0.029778584000000];
-Max20thResidual = load('ResiMax.csv');
-Min20thResidual = -Max20thResidual;
+MaxResidual = load('ResiMax.csv');
+MinResidual = -MaxResidual;
 Max20thEncoderError = [0.002700000000000   0.002100000000000   0.002200000000000   0.003100000000000   0.001120000000000   0.002300000000000];
 Min20thEncoderError = [-0.001300000000000  -0.002870000000000  -0.002480000000000  -0.003400000000000  -0.001300000000000  -0.002400000000000];
-MaxQddot = [6.0 6.0 6.0 6.0 6.0 6.0];
+MaxQddot = [2.067000000000008   1.717999999999997   1.924999999999999   1.971000000000001   2.012000000000003   2.029999999999998];
 MinQddot = -MaxQddot;
 %% Free Motion
 cd ..
@@ -96,7 +96,7 @@ for data_idx = 1:2
         
         % Output
         for joint_data = 1:6
-            TestProcessData(TestProcessDataIdx,num_input*num_time_step+joint_data) = 2*(Data_Aggregate(k,85+joint_data) - Min20thResidual(joint_data))/(Max20thResidual(joint_data) - Min20thResidual(joint_data)) -1;
+            TestProcessData(TestProcessDataIdx,num_input*num_time_step+joint_data) = 2*(Data_Aggregate(k,85+joint_data) - MinResidual(joint_data))/(MaxResidual(joint_data) - MinResidual(joint_data)) -1;
         end
 
         % Input
