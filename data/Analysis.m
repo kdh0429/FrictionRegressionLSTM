@@ -109,7 +109,9 @@ mean(abs(PolyErr),1)
 disp('LSTM Error Mean: ')
 mean(abs(LSTMErr),1)
 disp('LSTM Threshold: ')
-[threshold, idx] = max(abs(LSTMErr),[],1)
+%[threshold, idx] = max(abs(LSTMErr),[],1)
+threshold = prctile(abs(LSTMErr),99.999,1);
+disp(threshold)
 csvwrite('Threshold.csv', threshold);
 
 %% Plot Trajectory

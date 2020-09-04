@@ -134,7 +134,11 @@ for k=num_time_step:size(Free_Aggregate_Data,1)
             FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+12+joint_data) = 2*((Free_Aggregate_Data(k-time_step+1,13+joint_data) - Free_Aggregate_Data(k-time_step,13+joint_data))*hz - MinQddot(1,joint_data)) / (MaxQddot(1,joint_data) - MinQddot(1,joint_data)) -1; % theta_ddot
             %FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+12+joint_data)= 2*(Free_Aggregate_Data(k-time_step,13+joint_data) - MinTrainingData(1,13+joint_data)) / (MaxTrainingData(1,13+joint_data) -MinTrainingData(1,13+joint_data)) -1; %theta_dot_pre
             %FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+18+joint_data) = 2*(Free_Aggregate_Data(k-time_step+1,55+joint_data) - MinTrainingData(1,55+joint_data)) / (MaxTrainingData(1,55+joint_data) - MinTrainingData(1,55+joint_data)) -1; % temperature
-            FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+6+joint_data) = 2*(Free_Aggregate_Data(k-time_step+1,7+joint_data) - MinTrainingData(1,7+joint_data)) / (MaxTrainingData(1,7+joint_data) - MinTrainingData(1,7+joint_data)) -1; % theta
+            FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+18+joint_data) = (Free_Aggregate_Data(k-time_step+1,13+joint_data)^2 - MinQdotSquare(1,joint_data)) / (MaxQdotSquare(1,joint_data) - MinQdotSquare(1,joint_data)); % theta dot square
+            corri_idx = 1;
+            for other_joint=joint_data+1:6
+                FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+24+corri_idx) = (Free_Aggregate_Data(k-time_step+1,13+joint_data)* - MinQdotSquare(1,joint_data)) / (MaxQdotSquare(1,joint_data) - MinQdotSquare(1,joint_data));
+            end
         end
    end
    

@@ -67,7 +67,7 @@ class FrictionLSTM(nn.Module):
             print("--------------------------------------------------------")
             print("Training Epoch ", epoch)
             self.cur_epoch += 1
-            if epoch > self.num_epochs/2:
+            if epoch == self.num_epochs/2:
                 self._optim = optim.Adam(
                     self.parameters(),
                     lr=self.config.getfloat('training', 'lr')/2.0,

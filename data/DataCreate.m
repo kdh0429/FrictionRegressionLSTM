@@ -8,7 +8,7 @@ Tool_list = ["0_00kg", "2_01kg", "5_01kg"];
 Free_Aggregate_Data = [];
 
 hz = 100;
-num_data_type = 4; % ee_acc, k_m*i_m-torque_dyna, qdot
+num_data_type = 3; % ee_acc, k_m*i_m-torque_dyna, qdot
 num_input = 6*num_data_type;
 num_output = 6;
 num_time_step = 20;
@@ -57,6 +57,8 @@ MaxQddot = [3.648090000000089   3.039999999999998   4.350000000000009   3.688000
 MinQddot = -MaxQddot;
 MaxQdotSquare = [4.327232040000000   3.095168158300030   3.891616310800066   4.051802643100034   4.135158853900035   4.184516181700033];
 MinQdotSquare = [0 0 0 0 0 0];
+MaxQdotCorri = [2.38364678670000,3.02673541730000,3.05212055850003,3.22641124680001,3.45352286560001,2.37626733470002,2.31548362110006,2.32087150650001,2.11782928740000,2.65391096070031,2.80763030570001,2.71676604820002,2.93371156410001,3.02865071520005,3.19050346410002];
+MinQdotCorri = -MaxQdotCorri;
 %% Data Set Concatenate
 
 % robot1 데이터가 포함된 폴더명 검색
@@ -126,6 +128,7 @@ for k=num_time_step:size(Free_Aggregate_Data,1)
     
     % Input
    for time_step=1:num_time_step
+       corri_idx = 1;
         for joint_data=1:6
             FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+joint_data) = 2*(Free_Aggregate_Data(k-time_step+1,13+joint_data) - MinTrainingData(1,13+joint_data)) / (MaxTrainingData(1,13+joint_data) - MinTrainingData(1,13+joint_data)) -1; % theta_dot
             %FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+6+joint_data) = 2*((Free_Aggregate_Data(k-time_step+1,7+joint_data)-Free_Aggregate_Data(k-time_step+1,37+joint_data)) - Min20thEncoderError(1,joint_data)) / (Max20thEncoderError(1,joint_data) - Min20thEncoderError(1,joint_data)) -1; % encoder difference
@@ -134,7 +137,11 @@ for k=num_time_step:size(Free_Aggregate_Data,1)
             FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+12+joint_data) = 2*((Free_Aggregate_Data(k-time_step+1,13+joint_data) - Free_Aggregate_Data(k-time_step,13+joint_data))*hz - MinQddot(1,joint_data)) / (MaxQddot(1,joint_data) - MinQddot(1,joint_data)) -1; % theta_ddot
             %FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+12+joint_data)= 2*(Free_Aggregate_Data(k-time_step,13+joint_data) - MinTrainingData(1,13+joint_data)) / (MaxTrainingData(1,13+joint_data) -MinTrainingData(1,13+joint_data)) -1; %theta_dot_pre
             %FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+18+joint_data) = 2*(Free_Aggregate_Data(k-time_step+1,55+joint_data) - MinTrainingData(1,55+joint_data)) / (MaxTrainingData(1,55+joint_data) - MinTrainingData(1,55+joint_data)) -1; % temperature
-            FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+18+joint_data) = (Free_Aggregate_Data(k-time_step+1,13+joint_data)^2 - MinQdotSquare(1,joint_data)) / (MaxQdotSquare(1,joint_data) - MinQdotSquare(1,joint_data)); % theta dot square
+%             FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+18+joint_data) = (Free_Aggregate_Data(k-time_step+1,13+joint_data)^2 - MinQdotSquare(1,joint_data)) / (MaxQdotSquare(1,joint_data) - MinQdotSquare(1,joint_data)); % theta dot square
+%             for other_joint=joint_data+1:6
+%                 FreeProcessData(FreeProcessDataIdx,num_input*(num_time_step-time_step)+24+corri_idx) = 2*(Free_Aggregate_Data(k-time_step+1,13+joint_data)*Free_Aggregate_Data(k-time_step+1,13+other_joint) - MinQdotCorri(1,corri_idx)) / (MaxQdotCorri(1,corri_idx) - MinQdotCorri(1,corri_idx))-1;
+%                 corri_idx = corri_idx+1;
+%             end
         end
    end
    
